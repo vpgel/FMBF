@@ -14,23 +14,25 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-
+/**
+ * Разновидность {@link Thread}, управляющая сокет-соединением между клиентской инстанцией Minecraft и сервером.
+ */
 public class Session extends Thread {
-    Minecraft instance;
-    Socket connection;
-    BufferedReader in;
-    BufferedWriter out;
-    boolean running;
+    private Minecraft instance;
+    private Socket connection;
+    private BufferedReader in;
+    private BufferedWriter out;
     
     /**
      * Стадия 1: инициализация
      */
     public Session() throws UnknownHostException, IOException {
         instance = Minecraft.getInstance();
-        connection = new Socket("127.0.0.1", 2323);
+        connection = new Socket(Config.host, Config.port);
         in = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
         out = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream(), "UTF-8"));
-        MCClientBot.logger.info("started");
+        ClientBot.logger.info(String.format("ClientBot has established a connection on %s:%d!",
+            Config.host, Config.port));
     }
 
     /**
@@ -45,18 +47,17 @@ public class Session extends Thread {
             while (!this.isInterrupted()) {
                 if (instance.player != null) {
                     request = getSurroundingData();  // 1. Засунуть данные об окружении игрока в строку
-                    MCClientBot.logger.info("request "+request);
+                    //ClientBot.logger.info("request "+request);
                     out.write(request);              // 2. Отослать эти данные серверу Python
                     out.flush();
                     response = in.readLine();        // 3. Получить ответную команду сервера Python
-                    MCClientBot.logger.info("response "+response);
+                    //ClientBot.logger.info("response "+response);
                     controlPlayer(response);         // 4. Выполнить действия, связанные с командой
                 }
             }
             in.close();
             out.close();
             connection.close();
-            MCClientBot.logger.info("ended");
         } catch (IOException e) {
             // Сервер Питона неожиданно обрывает соединение
             this.interrupt();
@@ -112,7 +113,7 @@ public class Session extends Thread {
                 instance.player.turn(10, 0);
             }
             default -> {
-                MCClientBot.logger.error("Unknown command: " + command);
+                ClientBot.logger.error("Unknown command: " + command);
             }
         }
     }
