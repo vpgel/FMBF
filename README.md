@@ -35,6 +35,10 @@ python example.py
 
 (Ожидаемый) результат: ваш игрок идёт вперёд сам по себе!
 
+Мне нужна документация! / туториал!
+----
+Вам [сюда](https://github.com/vpgel/FMBF/tree/python) - в ветку [python](https://github.com/vpgel/FMBF/tree/python).
+
 Возникли проблемы с использованием или есть предложения по изменению/добавлению чего-то во фреймворк?
 ----
 [Вам сюда](https://github.com/vpgel/FMBF/issues).
