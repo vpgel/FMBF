@@ -1,4 +1,4 @@
-package io.github.forkgenesis.mcclientbot;
+package io.github.vpgel.fmbf;
 
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -8,13 +8,13 @@ import net.minecraftforge.fml.event.config.ModConfigEvent;
 /**
  * Конфиг мода: хост (127.0.0.1 по умолчанию) и порт (2323 по умолчанию)
  */
-@Mod.EventBusSubscriber(modid=MCClientBot.modid, bus=Mod.EventBusSubscriber.Bus.MOD)
+@Mod.EventBusSubscriber(modid=FMBF.modid, bus=Mod.EventBusSubscriber.Bus.MOD)
 public class Config {
     private static final ForgeConfigSpec.Builder configBuilder = new ForgeConfigSpec.Builder();
 
-    private static final ForgeConfigSpec.ConfigValue<String> HOST = configBuilder
+    private static final ForgeConfigSpec.ConfigValue<String> IP = configBuilder
             .comment("Hostname (IP) for the socket server")
-            .define("host", "127.0.0.1");
+            .define("ip", "127.0.0.1");
 
     private static final ForgeConfigSpec.IntValue PORT = configBuilder
             .comment("Port for the socket server")
@@ -22,12 +22,12 @@ public class Config {
 
     static final ForgeConfigSpec SPEC = configBuilder.build();
 
-    public static String host;
+    public static String ip;
     public static int port;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
-        host = HOST.get();
+        ip = IP.get();
         port = PORT.get();
     }
 }

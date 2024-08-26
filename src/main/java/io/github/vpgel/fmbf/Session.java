@@ -1,4 +1,4 @@
-package io.github.forkgenesis.mcclientbot;
+package io.github.vpgel.fmbf;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -8,31 +8,49 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-import net.minecraft.client.Minecraft;
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObjectBuilder;
+
+import net.minecraft.client.player.KeyboardInput;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.MoverType;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.event.TickEvent.ClientTickEvent;
 
 /**
  * Разновидность {@link Thread}, управляющая сокет-соединением между клиентской инстанцией Minecraft и сервером.
  */
 public class Session extends Thread {
-    private Minecraft instance;
     private Socket connection;
     private BufferedReader in;
     private BufferedWriter out;
+    //public FMBF mod;
+    private String request, response;
+    private boolean ready;
+
+    public LocalPlayer player() {
+        return FMBF.instance.player;
+    }
+    public boolean isReady() {
+        this.ready = !this.ready;
+        return !this.ready;
+    }
+    public String getResponse() {
+        return this.response;
+    }
     
     /**
      * Стадия 1: инициализация
      */
     public Session() throws UnknownHostException, IOException {
-        instance = Minecraft.getInstance();
-        connection = new Socket(Config.host, Config.port);
+        connection = new Socket(Config.ip, Config.port);
         in = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-16BE"));
         out = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream(), "UTF-16BE"));
-        MCClientBot.logger.info(String.format("Connected to %s:%d", Config.host, Config.port));
+        FMBF.logger.info(String.format("Connected to %s:%d", Config.ip, Config.port));
+        ready = false;
     }
 
     /**
@@ -43,9 +61,9 @@ public class Session extends Thread {
         try {
             Thread.sleep(1000);
 
-            String request = getSurroundingData(), response = null;
+            request = Json.createObjectBuilder().add("name", player().getName().getString()).build().toString();
+
             // Отправить первые данные
-            request = getSurroundingData();
             out.write(request.length());
             out.flush();
             out.write(request);
@@ -63,10 +81,15 @@ public class Session extends Thread {
                 System.out.println(String.format("Received a response from server: %s, with the size: %d characters", request, len));
                 
                 // Выполнить действия, связанные с командой
-                controlPlayer(response);
+                this.ready = !this.ready;
 
                 // Отправить данные
-                request = getSurroundingData();
+                try {
+                    request = getSurroundingData();
+                } catch (NullPointerException e) {
+                    Thread.sleep(3000);
+                    request = getSurroundingData();
+                }
                 out.write(request.length());
                 out.flush();
                 out.write(request);
@@ -75,7 +98,7 @@ public class Session extends Thread {
 
                 len = in.read();
             }
-            MCClientBot.logger.info("Aborting connection");
+            FMBF.logger.info("Aborting connection");
             connection.close();
         } catch (IOException e) {
             // Сервер Питона неожиданно обрывает соединение
@@ -89,52 +112,60 @@ public class Session extends Thread {
      * Получение данных с мира
      */
     public String getSurroundingData() {
-        String data = "";
+        // Этот JSON-объект - данные об окружающем мире и состоянии бота, которые сконвертируются в String в конце функции.
+        JsonObjectBuilder data = Json.createObjectBuilder();
+        JsonArrayBuilder blocksData = Json.createArrayBuilder();
+
         // Здесь получить данные о рядом находящихся блоках и сущностях и записать их в data
-        BlockPos playerPos = instance.player.getOnPos();
+        BlockPos playerPos = player().getOnPos();
 
         for (int x = -1; x <= 1; x++) {
             for (int y = -1; y <= 1; y++) {
                 for (int z = -1; z <= 1; z++) {
+                    JsonObjectBuilder block = Json.createObjectBuilder();
                     BlockPos pos = playerPos.offset(x, y, z);
-                    BlockState blockState = instance.player.level().getBlockState(pos);
-                    data += (pos.toString()+":"+blockState.getBlock().getDescriptionId()+"\n");
+                    String id = player().level().getBlockState(pos).getBlock().getDescriptionId();
+                    //data += (pos.toString()+":"+blockState.getBlock().getDescriptionId()+"\n");
+                    block.add("id", id).add("x", pos.getX()).add("y", pos.getY()).add("z", pos.getZ());
+                    blocksData.add(block.build());
                 }
             }
         }
+        data.add("blocks", blocksData.build());
 
-        for (Entity entity: instance.player.level().getEntitiesOfClass(Entity.class, instance.player.getBoundingBox().inflate(5))) {
-            data += ("Тип: "+entity.getName().getString()+", координаты: "+entity.getPosition(0)+"\n");
+        JsonArrayBuilder entitiesData = Json.createArrayBuilder();
+
+        for (Entity entity: player().level().getEntitiesOfClass(Entity.class, player().getBoundingBox().inflate(5))) {
+            Vec3 pos = entity.getPosition(0);
+            JsonObjectBuilder entityData = Json.createObjectBuilder();
+            entityData.add("id", entity.getName().getString()).add("x", pos.x).add("y", pos.y).add("z", pos.z);
+            entitiesData.add(entityData.build());
         }
+        data.add("entities", entitiesData.build());
 
-        data += ".\n";
-
-        return data;
+        return data.build().toString();
     }
     
     /**
      * Выполнение команды
-     * @param command - команда
+     * @param message - команда и аргументы
      */
-    public void controlPlayer(String command) {
+    public void controlPlayer(String message) {
+        String command = message.split(" ")[0];
+        String[] args = new String[0];
+        if (message.split(" ").length == 2) {
+            args = message.split(" ")[1].split(",");
+        }
         switch (command) {
-            case "move_forward" -> {
-                instance.player.move(MoverType.PLAYER, new Vec3(1, 0, 0));
-            }
-            case "move_backward" -> {
-                instance.player.move(MoverType.PLAYER, new Vec3(-1, 0, 0));
-            }
-            case "move_left" -> {
-                instance.player.move(MoverType.PLAYER, new Vec3(0, 0, -1));
-            }
-            case "move_right" -> {
-                instance.player.move(MoverType.PLAYER, new Vec3(0, 0, 1));
+            case "walk_forward" -> {
+                //player().setDeltaMovement(player().getEyePosition());
+                player().move(MoverType.SELF, player().getForward().scale(0.1));
             }
             case "turn_right" -> {
-                instance.player.turn(10, 0);
+                player().turn(Integer.valueOf(args[0]), 0);
             }
             default -> {
-                MCClientBot.logger.error("Unknown command: " + command);
+                FMBF.logger.error("Unknown command: " + command);
             }
         }
     }
