@@ -8,7 +8,7 @@ import net.minecraftforge.fml.event.config.ModConfigEvent;
 /**
  * Конфиг мода: хост (127.0.0.1 по умолчанию) и порт (2323 по умолчанию)
  */
-@Mod.EventBusSubscriber(modid=ClientBot.modid, bus=Mod.EventBusSubscriber.Bus.MOD)
+@Mod.EventBusSubscriber(modid=MCClientBot.modid, bus=Mod.EventBusSubscriber.Bus.MOD)
 public class Config {
     private static final ForgeConfigSpec.Builder configBuilder = new ForgeConfigSpec.Builder();
 

@@ -14,18 +14,20 @@ import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 
-@Mod(ClientBot.modid)
-public class ClientBot {
+@Mod(MCClientBot.modid)
+public class MCClientBot {
     public static final String modid = "mcclientbot";
     public static final Logger logger = LogUtils.getLogger();
     Session session = null;
 
-    public ClientBot() {
+    public MCClientBot() {
         MinecraftForge.EVENT_BUS.register(this);
+        MinecraftForge.EVENT_BUS.addListener(this::onLogIn);
+        MinecraftForge.EVENT_BUS.addListener(this::onLogOut);
+
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
     }
 
-    @SubscribeEvent
     public void onLogIn(PlayerLoggedInEvent event) {
         try {
             session = new Session();
@@ -36,7 +38,6 @@ public class ClientBot {
         }
     }
 
-    @SubscribeEvent
     public void onLogOut(PlayerLoggedOutEvent event) {
         if (session != null)
             session.interrupt();

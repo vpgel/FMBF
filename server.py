@@ -1,6 +1,8 @@
-import socket, _thread
+import socket, _thread, sys
+from time import sleep
 
 def start_server(host: str = 'localhost', port: int = 2323):
+
     # Тело программы
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
 
@@ -12,9 +14,17 @@ def start_server(host: str = 'localhost', port: int = 2323):
         # Сервер постоянно ждёт входящего соединения, и как только он его ловит, то передаёт
         # его функции handle_connection, засунутой в поток. После чего снова ждёт входящего соединения,
         # и так до бесконечности. Многопоточный сервер!
+        conn = None
         while True:
-            conn, addr = server.accept()
-            _thread.start_new_thread(handle_connection, (conn, addr))
+            try:
+                conn, addr = server.accept()
+                _thread.start_new_thread(handle_connection, (conn, addr))
+            except KeyboardInterrupt:
+                print(1)
+                if conn == None:
+                    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+                conn.close()
+                break
 
 
 def handle_connection(conn: socket.socket, addr):
@@ -27,24 +37,11 @@ def handle_connection(conn: socket.socket, addr):
         online = True
 
         while online:
-            request = b'' # В этой переменной хранятся данные, выкачанные из входящего соединения.
-
-            # Входящее соединение выкачивается порциями по 1024 байта.
-            while True:
-                try:
-                    data = conn.recv(1024)
-                except (ConnectionResetError, ConnectionAbortedError):
-                    # conn.recv выдаёт ошибку, если соединение с клиентом прерывается.
-                    online = False
-                    break
-                request += data # порции по 1024 байта прибавляются к конечному запросу
-
-                # \n.\n - это флаг, означающий оканчивание сообщения. Его необходимо отправлять на сервер, 
-                # чтобы он знал, когда завершать выкачивание.
-                # .\n отбрасывается у конечного запроса.
-                if len(request)==0 or (b'\n.\n' in request):
-                    request = request[:-2]
-                    break
+            try: 
+                len = int.from_bytes(conn.recv(2))
+                msg = conn.recv(len)
+            except (ConnectionAbortedError): online = False
+            print(msg.decode('utf-16-be'))
             if not online:
                 break
             request = request.decode()
@@ -57,7 +54,8 @@ def handle_connection(conn: socket.socket, addr):
 
 
             # Отправка ответа
-            conn.sendall(response.encode())
+            conn.sendall(chr(len(response)).encode('utf-16-be'))
+            conn.sendall(response.encode('utf-16-be'))
             print(f'[Ответ для {addr}] {response}')
     print(f'[ИНФО] {addr} отключился')
 
