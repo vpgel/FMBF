@@ -48,7 +48,7 @@ public class FMBF {
             mode = Mode.STOP;
         }
 
-        if (mode == Mode.START) {
+        if (mode == Mode.START && instance.player != null) {
             try {
                 session = new Session();
                 session.start();

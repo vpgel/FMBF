@@ -157,7 +157,7 @@ public class Session extends Thread {
         switch (command) {
             case "walk_forward" -> {
                 //player().setDeltaMovement(player().getEyePosition());
-                player().move(MoverType.SELF, player().getForward().scale(0.1));
+                player().zza = 1.0F;
             }
             case "turn_right" -> {
                 player().turn(Integer.valueOf(args[0]), 0);
