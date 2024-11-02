@@ -14,7 +14,7 @@ base {
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
-jarJar.enable()
+//jarJar.enable()
 
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
 minecraft {
@@ -141,12 +141,12 @@ dependencies {
     // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
     // The group id is ignored when searching -- in this case, it is "blank"
     // implementation fg.deobf("blank:coolmod-${mc_version}:${coolmod_version}")
-    jarJar(group: 'org.glassfish', name: 'javax.json', version: '[1.0,1.0.5)') {
+    /*jarJar(group: 'org.glassfish', name: 'javax.json', version: '[1.0,1.0.5)') {
       // Includes examplelib 2.8.0
       jarJar.pin(it, '1.0.4')
     }
     minecraftLibrary 'org.glassfish:javax.json:1.0.4'
-
+*/
     // For more info:
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html

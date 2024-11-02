@@ -50,13 +50,13 @@ public class FMBF {
 
         if (mode == Mode.START && instance.player != null) {
             try {
-                session = new Session();
-                session.start();
-            } catch (IOException e) {
+                session = new Session();// поток
+                session.start();//начало потока
+            } catch (IOException e) {// ошибка
                 logger.error(String.format("FMBF can't reach the server at %s:%d, continuing without it. If you believe the issue was resolved, reconnect to the world/server.", Config.ip, Config.port));
                 session = null;
             }
-            mode = Mode.ONLINE;
+            mode = Mode.ONLINE;// запуск мода
         } else if (mode == Mode.STOP) {
             if (session != null)
                 session.interrupt();
@@ -64,7 +64,5 @@ public class FMBF {
         }
     }
 
-    private enum Mode {
-        OFFLINE, START, ONLINE, STOP
-    };
+    private enum Mode {OFFLINE, START, ONLINE, STOP}; // шткуа, которая имеет 4 состояния
 }
