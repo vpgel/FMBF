@@ -20,7 +20,7 @@ import threading
 import socket
 import json
 import inspect
-from time import time
+from time import time, sleep
 from typing import Protocol
 
 # Библиотека для красивого дебаггинга. Не могу от неё оторваться.
@@ -74,20 +74,20 @@ class AbsoluteSolver(threading.Thread):
                 print(f'Потоки программы: {threading.enumerate()}')
                 print(f'Разрешения Солвера: {self.allowed_bots}')
             try:
-                bot, _ = self.socket.accept()
+                bot, _ = self.socket.accept()# ждём подключения 
                 request_length = int.from_bytes(bot.recv(2))
                 request = bot.recv(request_length*2).decode('utf-16-be')
                 print(request)
                 name = _decode_data(request)['name']
 
                 if name in self.allowed_bots.keys():
-                    bot.sendall((chr(2)+'👋').encode('utf-16-be'))
+                    bot.sendall((chr(1)+'1').encode('utf-16-be'))# (chr(1)+'0')- отправляем длинну сообщения и само сообщение
                     self.bots.append(_MinecraftConnection(self, name, bot, self.allowed_bots[name]))
 
                     if self.debug:
                         print(f'К Python попытался подключиться {name}, я разрешил!')
                 else:
-                    bot.sendall((chr(2)+'✋').encode('utf-16-be'))
+                    bot.sendall((chr(1)+'0').encode('utf-16-be'))
                     bot.close()
 
                     if self.debug:
@@ -105,24 +105,23 @@ class AbsoluteSolver(threading.Thread):
         if self.debug:
             print(f'Закрыл сервер!')
 
-    def add(self, name: str, program: _ProgramCallable):
+    def add(self, program: _ProgramCallable):
         '''Соединить Python с ботом Minecraft и дать ему программу, по которой он будет работать.
         Эта программа запускается в ответ на каждый раз, когда бот присылает Python'у данные из Minecraft'а.
 
-        :param name: Имя аккаунта Minecraft, к которому подключается бот.
         :param program: Функция, которая определяет поведение бота.
 
         Аргумент **program** это функция следующего вида:
 
         .. code-block:: python
-            def example(**_) -> str:
+            def Test23() -> str:
                 return 'move_forward'
         
-        Она может принимать какие угодно **названные** аргументы и должна обязательно возвращать строку. Подробное описание этой функции и её возможностей будет приведено где-то *не тут*.
+        Она должна иметь **ровно** такое же имя, как и аккаунт Майнкрафта; может принимать какие угодно **названные** аргументы и должна обязательно возвращать строку. Подробное описание этой функции и её возможностей будет приведено где-то *не тут*.
         '''
-        self.allowed_bots[name] = program
+        self.allowed_bots[program.__name__] = program
         if self.debug:
-            print(f'Разрешил подключаться боту {name}!')
+            print(f'Разрешил подключаться боту {program.__name__}!')
     
     def close(self):
         '''Закрыть!'''
@@ -149,18 +148,25 @@ class _MinecraftConnection(threading.Thread):
 
     def run(self):
         try:
+            response = "1"
+            self.bot.sendall((chr(len(response))+response).encode('utf-16-be'))# отправляем в маин
             while self.is_running:
-                request_length = int.from_bytes(self.bot.recv(2))
-                request = self.bot.recv(request_length*2).decode('utf-16-be')
-                if self.solver.debug:
-                    print(f'Бот {self.name} прислал запрос: {request}')
 
+                request_length = int.from_bytes(self.bot.recv(2))# получаем длинну от майна
+                request = self.bot.recv(request_length*2).decode('utf-16-be')# Получаем строку
+                #if self.solver.debug:# просто принт
+                print(f'Бот {self.name} прислал запрос: {request}')
+ 
+                sleep(5)
                 data = _decode_data(request)
-                response = self.actual_program(**data)
+                if data != None:
+                    response = self.actual_program() #функция для данных (Dev)
+                else:
+                    response = self.actual_program(**data) #функция для данных (Dev)
 
-                self.bot.sendall((chr(len(response))+response).encode('utf-16-be'))
-                if self.solver.debug:
-                    print(f'Отослал боту {self.name} команду: {response}')
+                self.bot.sendall((chr(len(response))+response).encode('utf-16-be'))# отправляем в маин 
+                #if self.solver.debug:
+                print(f'Отослал боту {self.name} команду: {response}')
             self.bot.close()
         except OSError:
             pass
