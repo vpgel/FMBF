@@ -21,6 +21,7 @@ import socket
 import json
 import inspect
 from time import time, sleep
+from time import time, sleep
 from typing import Protocol
 import signal
 import sys
@@ -105,6 +106,7 @@ class AbsoluteSolver(threading.Thread):
                         print(f'К Python попытался подключиться {name}, я разрешил!')
                 else:
                     bot.sendall((chr(1)+'0').encode('utf-16-be'))
+                    bot.sendall((chr(1)+'0').encode('utf-16-be'))
                     bot.close()
 
                     if self.debug:
@@ -135,12 +137,16 @@ class AbsoluteSolver(threading.Thread):
 
         .. code-block:: python
             def Test23() -> str:
+            def Test23() -> str:
                 return 'move_forward'
         
         Она должна иметь **ровно** такое же имя, как и аккаунт Майнкрафта; может принимать какие угодно **названные** аргументы и должна обязательно возвращать строку. Подробное описание этой функции и её возможностей будет приведено где-то *не тут*.
+        Она должна иметь **ровно** такое же имя, как и аккаунт Майнкрафта; может принимать какие угодно **названные** аргументы и должна обязательно возвращать строку. Подробное описание этой функции и её возможностей будет приведено где-то *не тут*.
         '''
         self.allowed_bots[program.__name__] = program
+        self.allowed_bots[program.__name__] = program
         if self.debug:
+            print(f'Разрешил подключаться боту {program.__name__}!')
             print(f'Разрешил подключаться боту {program.__name__}!')
     
     def close(self):
@@ -183,6 +189,8 @@ class _MinecraftConnection(threading.Thread):
 
     def run(self):
         try:
+            response = "1"
+            self.bot.sendall((chr(len(response))+response).encode('utf-16-be'))# отправляем в маин
             while self.is_running:
                 response_length = int.from_bytes(self.bot.recv(2))
                 response = self.bot.recv(response_length*2).decode('utf-16-be')
