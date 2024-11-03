@@ -20,13 +20,27 @@ import threading
 import socket
 import json
 import inspect
-from time import time
+from time import time, sleep
 from typing import Protocol
+import signal
+import sys
 
 # Библиотека для красивого дебаггинга. Не могу от неё оторваться.
 # Если ещё кто-то нарвётся на этот код, вам придётся поставить её через cmd:
 # > pip install icecream
 #from icecream import ic
+
+print('FMBF 1.0, (c) Fork Genesis. Нажмите Ctrl+C, чтобы остановить программу.')
+
+def exit_handler(signum, frame):
+    '''
+    Эта функция останавливает потоки ввода-вывода и закрывает сокет.
+    Она вызывается при попытке выключить программу.'''
+
+    print('Выключение программы')
+    sys.exit(0)
+
+sigint_handler = signal.signal(signal.SIGINT, exit_handler)
 
 def _decode_data(request: str) -> dict:
     '''Эта функция преобразует входящее сообщение от бота в словарь данных об окружающем мире Майнкрафта и о состоянии самого бота.'''
@@ -45,6 +59,7 @@ class _MinecraftConnection(threading.Thread): ...
 class AbsoluteSolver(threading.Thread):
     '''ЗАПУСТИ PYTHON ДО MINECRAFT'А!
     ----'''
+
     def __init__(self, ip='127.0.0.1', port=2323, debug=False):
         '''Перед тобой программа, бесконечно слушающая входящие соединения клиентов Майнкрафта, но разрешающая войти только тем, кто был передан ей командой **add()**. Она работает параллельно основному потоку Python.
 
@@ -61,6 +76,8 @@ class AbsoluteSolver(threading.Thread):
         self.allowed_bots: dict[callable] = dict()
         self.socket = socket.socket()
         self.is_running = True
+        self.daemon = True
+        signal.signal(signal.SIGINT, sigint_handler)
         self.start()
     
     def run(self):
@@ -71,23 +88,23 @@ class AbsoluteSolver(threading.Thread):
         self.socket.listen()
         while self.is_running:
             if self.debug:
-                print(f'Потоки программы: {threading.enumerate()}')
-                print(f'Разрешения Солвера: {self.allowed_bots}')
+                print(f'[DEBUG] Работающие потоки программы: {list(map(lambda x: x.name, threading.enumerate()))}')
+                print(f'[DEBUG] Разрешения Солвера: {self.allowed_bots}')
             try:
                 bot, _ = self.socket.accept()
-                request_length = int.from_bytes(bot.recv(2))
-                request = bot.recv(request_length*2).decode('utf-16-be')
-                print(request)
-                name = _decode_data(request)['name']
+                response_length = int.from_bytes(bot.recv(2))
+                response = bot.recv(response_length*2).decode('utf-16-be')
+                print(response)
+                name = _decode_data(response)['name']
 
                 if name in self.allowed_bots.keys():
-                    bot.sendall((chr(2)+'👋').encode('utf-16-be'))
+                    bot.sendall((chr(1)+'1').encode('utf-16-be'))
                     self.bots.append(_MinecraftConnection(self, name, bot, self.allowed_bots[name]))
 
                     if self.debug:
                         print(f'К Python попытался подключиться {name}, я разрешил!')
                 else:
-                    bot.sendall((chr(2)+'✋').encode('utf-16-be'))
+                    bot.sendall((chr(1)+'0').encode('utf-16-be'))
                     bot.close()
 
                     if self.debug:
@@ -98,6 +115,9 @@ class AbsoluteSolver(threading.Thread):
                     break
             except ConnectionResetError:
                 pass
+            except KeyboardInterrupt:
+                print('key')
+            #sleep(5)
         
         for bot in self.bots:
             bot.close()
@@ -105,24 +125,23 @@ class AbsoluteSolver(threading.Thread):
         if self.debug:
             print(f'Закрыл сервер!')
 
-    def add(self, name: str, program: _ProgramCallable):
-        '''Соединить Python с ботом Minecraft и дать ему программу, по которой он будет работать.
+    def add(self, program: _ProgramCallable):
+        '''Эта функция соединяет Python с ботом Minecraft и даёт ему программу, по которой он будет работать.
         Эта программа запускается в ответ на каждый раз, когда бот присылает Python'у данные из Minecraft'а.
 
-        :param name: Имя аккаунта Minecraft, к которому подключается бот.
         :param program: Функция, которая определяет поведение бота.
 
         Аргумент **program** это функция следующего вида:
 
         .. code-block:: python
-            def example(**_) -> str:
+            def Test23() -> str:
                 return 'move_forward'
         
-        Она может принимать какие угодно **названные** аргументы и должна обязательно возвращать строку. Подробное описание этой функции и её возможностей будет приведено где-то *не тут*.
+        Она должна иметь **ровно** такое же имя, как и аккаунт Майнкрафта; может принимать какие угодно **названные** аргументы и должна обязательно возвращать строку. Подробное описание этой функции и её возможностей будет приведено где-то *не тут*.
         '''
-        self.allowed_bots[name] = program
+        self.allowed_bots[program.__name__] = program
         if self.debug:
-            print(f'Разрешил подключаться боту {name}!')
+            print(f'Разрешил подключаться боту {program.__name__}!')
     
     def close(self):
         '''Закрыть!'''
@@ -137,30 +156,46 @@ class _MinecraftConnection(threading.Thread):
         self.bot = bot
         self.is_running = True
         self.program = program
+        self.daemon = True
         self.start()
 
-    def actual_program(self, **data):
+    def actual_program(self, data):
         '''Бот Minecraft передаёт JSON-словарь с огромным количеством данных - о сущностях, блоках, инвентаре и т.п. Модуль построен так, что функции-программе для бота не обязательно обрабатывать весь словарь, она может посмотреть только в информацию об инвентаре, а на остальное забить. Эта меж-функция фильтрует подаваемый в self.program словарь с данным майнкрафта, оставляя только те ключи, которые заданы в self.program'''
-        kwargs = set(inspect.getfullargspec(self.program)[4])
-        unwanted_keys = list(set(data.keys())-kwargs)
-        for key in unwanted_keys:
-            del data[key]
-        return self.program(**data)
+        
+        kwargs = set(inspect.getfullargspec(self.program)[0])
+        new_data = dict()
+        
+        # Проходим по тем значениям, что получили из Майнкрафта
+        for key in data.keys():
+
+            # Если такие ключи есть и в функции Питона, то
+            if key in kwargs:
+                new_data[key] = data[key]  # добавляем
+            # А иначе просто игнорируем.
+
+        # Проходим по тем значениям, что запрашивает функция Питона
+        for arg in kwargs:
+            # Если такого значения не было отправлено, то
+            if arg not in new_data.keys():
+                new_data[arg] = None  # засовываем пустышку
+            
+        return self.program(**new_data)
 
     def run(self):
         try:
             while self.is_running:
-                request_length = int.from_bytes(self.bot.recv(2))
-                request = self.bot.recv(request_length*2).decode('utf-16-be')
+                response_length = int.from_bytes(self.bot.recv(2))
+                response = self.bot.recv(response_length*2).decode('utf-16-be')
                 if self.solver.debug:
-                    print(f'Бот {self.name} прислал запрос: {request}')
+                    print(f'Бот {self.name} прислал запрос: {response}')
 
-                data = _decode_data(request)
-                response = self.actual_program(**data)
+                data = _decode_data(response)
+                request = self.actual_program(data)
 
-                self.bot.sendall((chr(len(response))+response).encode('utf-16-be'))
+                self.bot.sendall((chr(len(request))+request).encode('utf-16-be'))
                 if self.solver.debug:
-                    print(f'Отослал боту {self.name} команду: {response}')
+                    print(f'Отослал боту {self.name} команду: {request}')
+                #sleep(5)
             self.bot.close()
         except OSError:
             pass
@@ -171,22 +206,17 @@ class _MinecraftConnection(threading.Thread):
     def close(self):
         self.is_running = False
 
-if __name__=='__main__':
-    start = time()
-    solver = AbsoluteSolver('127.0.0.1', 2323, True)
 
-    def program():
-        return 'move_forward'
+if __name__=='__main__':
+    print('Вы запустили файл модуля fmbf. Вы точно хотели это сделать? Да? Ну тогда вот вам пример работы программы с этим модулем.')
+    start = time()
+    solver = AbsoluteSolver(debug=True)
+
+    def Test23():
+        return 'осмотрись'
 
     # Замените Test23 на никнейм вашего игрока Майнкрафт
-    solver.add('Test23', program)
+    solver.add(Test23)
 
-    while True:
-        try:
-            current = time()
-            if current-start > 15:
-                solver.close()
-                break
-        except KeyboardInterrupt:
-            solver.close()
-            break
+while True:           # added
+    sleep(1)
