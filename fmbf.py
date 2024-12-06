@@ -1,3 +1,5 @@
+### ВЕРСИЯ 1.1
+
 '''
 Fork's Minecraft Botting Framework
 ----
@@ -20,7 +22,6 @@ import threading
 import socket
 import json
 import inspect
-from time import time, sleep
 from time import time, sleep
 from typing import Protocol
 import signal
@@ -106,7 +107,6 @@ class AbsoluteSolver(threading.Thread):
                         print(f'К Python попытался подключиться {name}, я разрешил!')
                 else:
                     bot.sendall((chr(1)+'0').encode('utf-16-be'))
-                    bot.sendall((chr(1)+'0').encode('utf-16-be'))
                     bot.close()
 
                     if self.debug:
@@ -127,7 +127,7 @@ class AbsoluteSolver(threading.Thread):
         if self.debug:
             print(f'Закрыл сервер!')
 
-    def add(self, program: _ProgramCallable):
+    def add(self, program: _ProgramCallable, name: str|None=None):
         '''Эта функция соединяет Python с ботом Minecraft и даёт ему программу, по которой он будет работать.
         Эта программа запускается в ответ на каждый раз, когда бот присылает Python'у данные из Minecraft'а.
 
@@ -137,16 +137,15 @@ class AbsoluteSolver(threading.Thread):
 
         .. code-block:: python
             def Test23() -> str:
-            def Test23() -> str:
                 return 'move_forward'
         
         Она должна иметь **ровно** такое же имя, как и аккаунт Майнкрафта; может принимать какие угодно **названные** аргументы и должна обязательно возвращать строку. Подробное описание этой функции и её возможностей будет приведено где-то *не тут*.
-        Она должна иметь **ровно** такое же имя, как и аккаунт Майнкрафта; может принимать какие угодно **названные** аргументы и должна обязательно возвращать строку. Подробное описание этой функции и её возможностей будет приведено где-то *не тут*.
         '''
-        self.allowed_bots[program.__name__] = program
-        self.allowed_bots[program.__name__] = program
+        if name == None:
+            self.allowed_bots[program.__name__] = program
+        else:
+            self.allowed_bots[name] = program
         if self.debug:
-            print(f'Разрешил подключаться боту {program.__name__}!')
             print(f'Разрешил подключаться боту {program.__name__}!')
     
     def close(self):
@@ -225,6 +224,3 @@ if __name__=='__main__':
 
     # Замените Test23 на никнейм вашего игрока Майнкрафт
     solver.add(Test23)
-
-while True:           # added
-    sleep(1)
