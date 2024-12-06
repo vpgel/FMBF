@@ -185,7 +185,7 @@ class _MinecraftConnection(threading.Thread):
             if arg not in new_data.keys():
                 new_data[arg] = None  # засовываем пустышку
             
-        return self.program(**new_data)
+        return str(self.program(**new_data))
 
     def run(self):
         try:
