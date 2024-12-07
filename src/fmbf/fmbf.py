@@ -1,4 +1,4 @@
-### ВЕРСИЯ 1.1
+### ВЕРСИЯ 1.2
 
 '''
 Fork's Minecraft Botting Framework
@@ -27,14 +27,9 @@ from typing import Protocol
 import signal
 import sys
 
-# Библиотека для красивого дебаггинга. Не могу от неё оторваться.
-# Если ещё кто-то нарвётся на этот код, вам придётся поставить её через cmd:
-# > pip install icecream
-#from icecream import ic
+print('FMBF 1.2, (c) Fork Genesis. Нажмите Ctrl+C, чтобы остановить программу.')
 
-print('FMBF 1.0, (c) Fork Genesis. Нажмите Ctrl+C, чтобы остановить программу.')
-
-def exit_handler(signum, frame):
+def _exit_handler(signum, frame):
     '''
     Эта функция останавливает потоки ввода-вывода и закрывает сокет.
     Она вызывается при попытке выключить программу.'''
@@ -42,14 +37,14 @@ def exit_handler(signum, frame):
     print('Выключение программы')
     sys.exit(0)
 
-sigint_handler = signal.signal(signal.SIGINT, exit_handler)
+sigint_handler = signal.signal(signal.SIGINT, _exit_handler)
 
 def _decode_data(request: str) -> dict:
     '''Эта функция преобразует входящее сообщение от бота в словарь данных об окружающем мире Майнкрафта и о состоянии самого бота.'''
     try:
         return json.loads(request)
     except json.decoder.JSONDecodeError:
-        print('Ошибка в отправленном из бота сообщении. Сообщи его создателю!')
+        print('Ошибка в отправленном из мода сообщении. Сообщи его создателю!')
 
 class _ProgramCallable(Protocol):
     '''Это класс, описывающий **тип** функции, отвечающей за программу, которая даётся боту. Суть в том, что эта функция может принимать неограниченное количество названных аргументов и обязана возвращать только строку, и этот класс и описывает функцию такого рода.'''
@@ -62,18 +57,20 @@ class AbsoluteSolver(threading.Thread):
     '''ЗАПУСТИ PYTHON ДО MINECRAFT'А!
     ----'''
 
-    def __init__(self, ip='127.0.0.1', port=2323, debug=False):
+    def __init__(self, ip='127.0.0.1', port=2323, debug=False, info=False):
         '''Перед тобой программа, бесконечно слушающая входящие соединения клиентов Майнкрафта, но разрешающая войти только тем, кто был передан ей командой **add()**. Она работает параллельно основному потоку Python.
 
         Этот объект запускается только один раз, сразу после его инициализации. Его можно в любой момент закрыть методом **close()**, после чего он больше не запустится.
         
         :param ip: IP-адрес (по умолчанию твой локальный)
         :param port: порт для входящих соединений (по умолчанию 2323, как и в моде Minecraft)
-        :param debug: режим отладки - куча сообщений заполнят консоль мигом'''
+        :param debug: режим отладки - куча сообщений заполнят консоль мигом
+        :param info: режим ослабленной отладки - только сообщения о трансфере данных'''
         super().__init__()
         self.ip = ip
         self.port = port
         self.debug = debug
+        self.info = info
         self.bots: list[_MinecraftConnection] = []
         self.allowed_bots: dict[callable] = dict()
         self.socket = socket.socket()
@@ -104,13 +101,13 @@ class AbsoluteSolver(threading.Thread):
                     self.bots.append(_MinecraftConnection(self, name, bot, self.allowed_bots[name]))
 
                     if self.debug:
-                        print(f'К Python попытался подключиться {name}, я разрешил!')
+                        print(f'[DEBUG] К Python попытался подключиться {name}, я разрешил!')
                 else:
                     bot.sendall((chr(1)+'0').encode('utf-16-be'))
                     bot.close()
 
                     if self.debug:
-                        print(f'К Python попытался подключиться какой-то {name}, я запретил.')
+                        print(f'[DEBUG] К Python попытался подключиться какой-то {name}, я запретил.')
             
             except socket.timeout:
                 if not self.is_running:
@@ -125,7 +122,7 @@ class AbsoluteSolver(threading.Thread):
             bot.close()
         self.socket.close()
         if self.debug:
-            print(f'Закрыл сервер!')
+            print(f'[DEBUG] Закрыл сервер!')
 
     def add(self, program: _ProgramCallable, name: str|None=None):
         '''Эта функция соединяет Python с ботом Minecraft и даёт ему программу, по которой он будет работать.
@@ -142,11 +139,11 @@ class AbsoluteSolver(threading.Thread):
         Она должна иметь **ровно** такое же имя, как и аккаунт Майнкрафта; может принимать какие угодно **названные** аргументы и должна обязательно возвращать строку. Подробное описание этой функции и её возможностей будет приведено где-то *не тут*.
         '''
         if name == None:
-            self.allowed_bots[program.__name__] = program
-        else:
-            self.allowed_bots[name] = program
+            name = program.__name__
+        
+        self.allowed_bots[name] = program
         if self.debug:
-            print(f'Разрешил подключаться боту {program.__name__}!')
+            print(f'[DEBUG] Разрешил подключаться боту {name}!')
     
     def close(self):
         '''Закрыть!'''
@@ -188,27 +185,26 @@ class _MinecraftConnection(threading.Thread):
 
     def run(self):
         try:
-            response = "1"
-            self.bot.sendall((chr(len(response))+response).encode('utf-16-be'))# отправляем в маин
+            
             while self.is_running:
                 response_length = int.from_bytes(self.bot.recv(2))
                 response = self.bot.recv(response_length*2).decode('utf-16-be')
-                if self.solver.debug:
-                    print(f'Бот {self.name} прислал запрос: {response}')
+                if self.solver.info:
+                    print(f'[INFO] Бот {self.name} прислал ответ: {response}')
 
                 data = _decode_data(response)
                 request = self.actual_program(data)
 
-                self.bot.sendall((chr(len(request))+request).encode('utf-16-be'))
-                if self.solver.debug:
-                    print(f'Отослал боту {self.name} команду: {request}')
+                self.bot.sendall((chr(len(request))+request).encode('utf-16-be')) # отправляем в маин
+                if self.solver.info:
+                    print(f'[INFO] Отослал боту {self.name} команду: {request}')
                 #sleep(5)
             self.bot.close()
         except OSError:
             pass
         self.solver.bots.remove(self)
         if self.solver.debug:
-            print(f'Бот {self.name} завершил работу')
+            print(f'[DEBUG] Бот {self.name} завершил работу')
 
     def close(self):
         self.is_running = False
@@ -216,11 +212,13 @@ class _MinecraftConnection(threading.Thread):
 
 if __name__=='__main__':
     print('Вы запустили файл модуля fmbf. Вы точно хотели это сделать? Да? Ну тогда вот вам пример работы программы с этим модулем.')
-    start = time()
-    solver = AbsoluteSolver(debug=True)
+    name = input('Введите свой никнейм: ')
+    solver = AbsoluteSolver(info=True)
 
-    def Test23():
-        return 'осмотрись'
+    def program(ctx):
+        return ctx
 
     # Замените Test23 на никнейм вашего игрока Майнкрафт
-    solver.add(Test23)
+    solver.add(program, name)
+    while True:
+        pass
