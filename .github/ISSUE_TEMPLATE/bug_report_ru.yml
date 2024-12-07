@@ -1,12 +1,13 @@
 name: "Сообщение о баге"
-description: "Нажмите, чтобы сообщить о баге!"
+description: "Если вы за вопросом или предложением - нажмите на blank issue внизу и выберите лейбл!"
 title: "[Баг]: "
-labels: ["bug"]
+labels: ["баг"]
 body:
   - type: markdown
     attributes:
       value: |
         Пожалуйста, потратьте немного времени, чтобы заполнить эту форму!
+        Эта форма - для сообщений о багах и ошибках. За вопросом, предложением или чем-то другим - вам [сюда](https://github.com/vpgel/FMBF/issues/new)!
   - type: textarea
     id: bug-description
     attributes:
