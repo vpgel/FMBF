@@ -1,4 +1,4 @@
-### ВЕРСИЯ 1.2
+### ВЕРСИЯ 1.2.1
 
 '''
 Fork's Minecraft Botting Framework
@@ -27,7 +27,7 @@ from typing import Protocol
 import signal
 import sys
 
-print('FMBF 1.2, (c) Fork Genesis. Нажмите Ctrl+C, чтобы остановить программу.')
+print('FMBF 1.2.1, (c) Fork Genesis. Нажмите Ctrl+C, чтобы остановить программу.')
 
 def _exit_handler(signum, frame):
     '''
