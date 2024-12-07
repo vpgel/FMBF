@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fmbf"
-version = "1.2.1"
+version = "1.2.2"
 authors = [
   { name="Fork Genesis", email="vasyapinfo@ya.ru" },
 ]
