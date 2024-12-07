@@ -6,7 +6,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
 
 /**
- * Конфиг мода: хост (127.0.0.1 по умолчанию) и порт (2323 по умолчанию)
+ * Конфиг мода: хост (127.0.0.1 по умолчанию), порт (2323 по умолчанию) и режим дебага (true по умолчанию).
  */
 @Mod.EventBusSubscriber(modid=FMBF.modid, bus=Mod.EventBusSubscriber.Bus.MOD)
 public class Config {
@@ -20,14 +20,20 @@ public class Config {
             .comment("Port for the socket server")
             .defineInRange("port", 2323, 0, 65535);
 
+    private static final ForgeConfigSpec.BooleanValue DEBUG = configBuilder
+            .comment("Whether enable additional messages from the mod's internal server")
+            .define("debug", true);
+
     static final ForgeConfigSpec SPEC = configBuilder.build();
 
     public static String ip;
     public static int port;
+    public static boolean debug;
 
     @SubscribeEvent
     static void onLoad(final ModConfigEvent event) {
         ip = IP.get();
         port = PORT.get();
+        debug = DEBUG.get();
     }
 }

@@ -2,14 +2,13 @@
 modLoader="javafml"
 loaderVersion="${loader_version_range}"
 license="${mod_license}"
-#issueTrackerURL="https://change.me.to.your.issue.tracker.example.invalid/" #optional
+issueTrackerURL="${mod_issue_tracker}"
 [[mods]]
 modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
-displayURL="https://github.com/VasyaProgrammist/Minecraft-Client-Bot/"
-logoFile="mcclientbot.png"
-#credits=""
+displayURL="${mod_url}"
+logoFile="fmbf.png"
 authors="${mod_authors}"
 
 description='''${mod_description}'''

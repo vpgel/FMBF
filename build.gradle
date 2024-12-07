@@ -14,7 +14,7 @@ base {
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
-//jarJar.enable()
+jarJar.enable()
 
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
 minecraft {
@@ -118,9 +118,9 @@ repositories {
 
     // If you have mod jar dependencies in ./libs, you can declare them as a repository like so.
     // See https://docs.gradle.org/current/userguide/declaring_repositories.html#sub:flat_dir_resolver
-    // flatDir {
-    //     dir 'libs'
-    // }
+    flatDir {
+        dir 'libs'
+    }
 }
 
 dependencies {
@@ -141,12 +141,15 @@ dependencies {
     // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
     // The group id is ignored when searching -- in this case, it is "blank"
     // implementation fg.deobf("blank:coolmod-${mc_version}:${coolmod_version}")
-    /*jarJar(group: 'org.glassfish', name: 'javax.json', version: '[1.0,1.0.5)') {
-      // Includes examplelib 2.8.0
+
+    jarJar(group: 'org.glassfish', name: 'javax.json', version: '[1.0,1.0.5)') {
       jarJar.pin(it, '1.0.4')
     }
-    minecraftLibrary 'org.glassfish:javax.json:1.0.4'
-*/
+    minecraftLibrary fg.deobf('org.glassfish:javax.json:1.0.4')
+    
+    // TODO
+    //implementation fg.deobf("blank:baritone-api-1.20.1:1.10.1")
+    
     // For more info:
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
@@ -162,7 +165,8 @@ tasks.named('processResources', ProcessResources).configure {
             forge_version: forge_version, forge_version_range: forge_version_range,
             loader_version_range: loader_version_range,
             mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
-            mod_authors: mod_authors, mod_description: mod_description,
+            mod_authors: mod_authors, mod_description: mod_description, mod_issue_tracker: mod_issue_tracker,
+            mod_url: mod_url
     ]
     inputs.properties replaceProperties
 
