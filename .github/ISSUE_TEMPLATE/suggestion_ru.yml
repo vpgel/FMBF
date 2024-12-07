@@ -1,0 +1,29 @@
+name: "Предложение"
+description: "Нажмите, чтобы предложить улучшение для мода/библиотеки!"
+title: "[Предложение]: "
+labels: ["suggestion"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Пожалуйста, потратьте немного времени, чтобы заполнить эту форму!
+  - type: textarea
+    id: sg-title
+    attributes:
+      label: "Название"
+      description: "В паре слов расскажите, в чём суть."
+      placeholder: "Способ двигать игроком"
+    validations:
+      required: true
+  - type: textarea
+    id: sg-description
+    attributes:
+      label: "Описание"
+      description: "Расскажите поподробнее"
+      placeholder: "Фреймворк для управления ботами, но в документации ни слова про команды, которые бы двигали игроком. Добавьте их пж"
+    validations:
+      required: false
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо вам за то, что потратили время и заполнили эту форму!

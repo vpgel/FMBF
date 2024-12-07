@@ -1,0 +1,98 @@
+name: "Сообщение о баге"
+description: "Нажмите, чтобы сообщить о баге!"
+title: "[Баг]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Пожалуйста, потратьте немного времени, чтобы заполнить эту форму!
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: "Описание бага"
+      description: "Вкратце расскажите, что не так."
+      placeholder: "Майнкрафт вылетает, когда я открываю cундук"
+    validations:
+      required: true
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: "Шаги воспроизведения бага"
+      description: "Напишите пошагово, что нужно сделать, чтобы получить баг"
+      placeholder: |
+        1. Запустить скрипт
+        2. Открыть Майнкрафт
+        3. Зайти в одиночный мир
+        4. Открыть сундук
+        5. Майнкрафт вылетает
+    validations:
+      required: true
+  - type: dropdown
+    id: mc-or-python
+    attributes:
+      label: "Майнкрафт или Питон?"
+      description: "На какой платформе возникает ошибка?"
+      options:
+        - Майнкрафт
+        - Питон
+        - Обе
+      default: 1
+    validations:
+      required: true
+  - type: textarea
+    id: mc-version
+    attributes:
+      label: "Версия Майнкрафта"
+      description: "Какую версию Майнкрафта вы использовали?"
+      placeholder: "1.20.1"
+    validations:
+      required: true
+  - type: textarea
+    id: forge-version
+    attributes:
+      label: "Версия Forge"
+      description: "Какую версию Forge вы использовали?"
+      placeholder: "47.3.0"
+    validations:
+      required: true
+  - type: textarea
+    id: mod-version
+    attributes:
+      label: "Версия мода"
+      description: "Какую версию мода вы использовали?"
+      placeholder: "0.3"
+    validations:
+      required: true
+  - type: textarea
+    id: py-version
+    attributes:
+      label: "Версия Питона"
+      description: "Какую версию Питона вы использовали?"
+      placeholder: "3.12.7"
+    validations:
+      required: true
+  - type: textarea
+    id: lib-version
+    attributes:
+      label: "Версия библиотеки"
+      description: "Какую версию библиотеки Питона вы использовали?"
+      placeholder: "1.2"
+    validations:
+      required: true
+  - type: textarea
+    id: mc-logs
+    attributes:
+      label: "Вывод журнала Майнкрафта"
+      description: "Пожалуйста, скопируйте и вставьте любой соответствующий вывод журнала. Он будет автоматически отформатирован в код, поэтому нет необходимости в обратных кавычках."
+      render: shell
+  - type: textarea
+    id: py-logs
+    attributes:
+      label: "Вывод интерпретатора Питона"
+      description: "Пожалуйста, скопируйте и вставьте любой соответствующий вывод интерпретатора. Он будет автоматически отформатирован в код, поэтому нет необходимости в обратных кавычках."
+      render: shell
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо вам за то, что потратили время и заполнили эту форму!
