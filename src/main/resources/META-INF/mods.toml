@@ -13,6 +13,12 @@ authors="${mod_authors}"
 
 description='''${mod_description}'''
 [[dependencies.${mod_id}]]
+    modId="baritoe"
+    mandatory=true
+    versionRange="[1,]"
+    ordering="NONE"
+    side="CLIENT"
+[[dependencies.${mod_id}]]
     modId="forge"
     mandatory=true
     versionRange="${forge_version_range}"

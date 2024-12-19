@@ -12,10 +12,9 @@ import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
 
-/*import baritone.api.BaritoneAPI;
-import baritone.api.pathing.goals.Goal;
-import baritone.api.pathing.goals.GoalGetToBlock;
-import net.minecraft.ChatFormatting;*/
+import baritone.api.BaritoneAPI;
+import baritone.api.pathing.goals.GoalBlock;
+import baritone.api.utils.Rotation;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
@@ -110,28 +109,46 @@ public class Session extends Thread {
                 if (Config.debug)
                     FMBF.logger.debug(String.format("Received a request from server: %s, with the size: %d characters", request, len));
                 
+                
+                String command = request;
+                String[] args = new String[0];
+                int spaceIndex = request.indexOf(' ');
+                if (spaceIndex != -1) {
+                    command = request.substring(0, spaceIndex);
+                    args = request.substring(spaceIndex+1, request.length()).split(",");
+                }
+
                 // На этом этапе в переменной request находится запрос. В зависимости от него формируется ответ в переменной response.
-                response = switch (request) {
-                    case "спи" -> {
+                response = switch (command) {
+                    case "поспи" -> {
                         yield idle();
                     }
-                    case "какие блоки рядом" -> {
-                        yield getNearestBlocks(4);
+                    case "ближайшиеБлоки" -> {
+                        yield getNearestBlocks(Integer.valueOf(args[0]));
                     }
-                    case "какие сущности рядом" -> {
-                        yield getNearestEntities(5);
+                    case "ближайшиеСущности" -> {
+                        yield getNearestEntities(Integer.valueOf(args[0]));
                     }
-                    case "на что смотришь" -> {
-                        yield getWhatImLookingAt(50.0D, true);
+                    case "наЧтоСмотришь" -> {
+                        yield getWhatImLookingAt(Double.valueOf(args[0]), Boolean.valueOf(args[1]));
                     }
-                    case "где ты" -> {
+                    case "позиция" -> {
                         yield getPlayerPos();
                     }
-                    case "куда смотришь" -> {
-                        yield getPlayerDirection();
+                    case "поворот" -> {
+                        yield getHeadRotation();
+                    }
+                    case "поставьЦельПойти" -> {
+                        yield relativeWalkTo(Integer.valueOf(args[0]), Integer.valueOf(args[1]), Integer.valueOf(args[2]));
+                    }
+                    case "поверниГолову" -> {
+                        yield setHeadRotation(Float.valueOf(args[0]), Float.valueOf(args[1]));
+                    }
+                    case "напишиВЧат" -> {
+                        yield postToChat(String.join(",", args));
                     }
                     default -> {
-                        yield defaultData(request);
+                        yield unknownCommandReturn(request);
                     }
                 };
 
@@ -330,7 +347,7 @@ public class Session extends Thread {
     /**
      * Получение направления взгляда игрока.
      */
-    private String getPlayerDirection() {
+    private String getHeadRotation() {
         JsonObjectBuilder directionData = Json.createObjectBuilder();
 
         float playerPosX = player().getViewXRot(0); // Это и есть направление взгляда.
@@ -343,7 +360,7 @@ public class Session extends Thread {
         return directionData.build().toString();
     }
 
-    private String defaultData(String command) {
+    private String unknownCommandReturn(String command) {
         JsonObjectBuilder data = Json.createObjectBuilder();
         data.add("ctx",command);
         data.add("code", 1);
@@ -351,18 +368,35 @@ public class Session extends Thread {
     }
 
     // TODO
-    /*private String walk(int x, int y, int z) {
-        player().move(MoverType.PLAYER, player().getEyePosition());
-        BaritoneAPI.getProvider().getBaritoneForPlayer(player()).getCustomGoalProcess().setGoal(new GoalGetToBlock(player().getOnPos().offset(x, y, z)));
+    private String relativeWalkTo(int x, int y, int z) {
+        BaritoneAPI.getSettings().allowSprint.value = true;
+        BaritoneAPI.getSettings().primaryTimeoutMS.value = 2000L;
 
-        JsonObjectBuilder walkData = Json.createObjectBuilder();
-        return walkData.build().toString();
-    }*/
+        BaritoneAPI.getProvider().getPrimaryBaritone().getCustomGoalProcess()
+            .setGoalAndPath(new GoalBlock(player().getBlockX()+x, player().getBlockY()+y, player().getBlockZ()+z));
+
+        JsonObjectBuilder data = Json.createObjectBuilder();
+        data.add("ctx", "иди").add("code", 0);
+        return data.build().toString();
+    }
+
+    // TODO
+    private String setHeadRotation(float yaw, float pitch) {
+        //player().turn(yaw, pitch);
+        BaritoneAPI.getProvider().getPrimaryBaritone().getLookBehavior().getAimProcessor().fork().peekRotation(new Rotation(yaw, pitch));
+        //.updateTarget(new Rotation(yaw, pitch), isAlive());
+
+        JsonObjectBuilder data = Json.createObjectBuilder();
+        data.add("ctx", "повернись").add("code", 0);
+        return data.build().toString();
+    }
 
     /**
      * Отправление сообщения в игровой чат. Эта функция реально тут просто так
      */
-    private String chat(String message) {
+    private String postToChat(String message) {
+        player().connection.sendChat(message);
+
         JsonObjectBuilder data = Json.createObjectBuilder();
         data.add("ctx","напиши");
         data.add("code", 1);
